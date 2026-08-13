@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    />
+    <title>Evolution Sandbox</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #0b1020;
+            color: #e8eefc;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            height: 100vh;
+        }
+
+        .simulation {
+            position: relative;
+            padding: 18px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+
+            background:
+                radial-gradient(circle at center, #182341, #080c18);
+
+            border: 1px solid #293556;
+            border-radius: 12px;
+        }
+
+        .stats {
+            position: absolute;
+            top: 32px;
+            left: 32px;
+
+            display: flex;
+            gap: 10px;
+        }
+
+        .stat {
+            min-width: 110px;
+            padding: 10px 14px;
+
+            background: rgba(13, 20, 40, 0.9);
+            border: 1px solid #2b395e;
+            border-radius: 8px;
+        }
+
+        .stat-label {
+            color: #8d9abb;
+            font-size: 12px;
+        }
+
+        .stat-value {
+            margin-top: 4px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .controls {
+            padding: 24px;
+
+            background: #11182b;
+            border-left: 1px solid #293556;
+
+            overflow-y: auto;
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 22px;
+        }
+
+        .description {
+            color: #8d9abb;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+
+        .control {
+            margin-bottom: 22px;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+
+            font-size: 14px;
+        }
+
+        .value {
+            color: #65d9ff;
+            font-family: monospace;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: #65d9ff;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 25px;
+        }
+
+        button {
+            padding: 11px;
+
+            border: 1px solid #334366;
+            border-radius: 7px;
+
+            background: #18223b;
+            color: #e8eefc;
+
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #22304e;
+        }
+
+        button.primary {
+            background: #1c7fa3;
+            border-color: #39b9e5;
+        }
+
+        button.primary:hover {
+            background: #2398c2;
+        }
+
+        .legend {
+            margin-top: 28px;
+            padding-top: 18px;
+
+            border-top: 1px solid #293556;
+
+            color: #8d9abb;
+            font-size: 13px;
+            line-height: 2;
+        }
+
+        .dot {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .cyan {
+            background: #65d9ff;
+        }
+
+        .yellow {
+            background: #ffd166;
+        }
+
+        .green {
+            background: #55efc4;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <div class="simulation">
+
+        <canvas id="canvas"></canvas>
+
+        <div class="stats">
+
+            <div class="stat">
+                <div class="stat-label">GENERATION</div>
+                <div class="stat-value" id="generation">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">BEST FITNESS</div>
+                <div class="stat-value" id="bestFitness">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">AVERAGE</div>
+                <div class="stat-value" id="averageFitness">0</div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <aside class="controls">
+
+        <h1>🧬 Evolution Lab</h1>
+
+        <div class="description">
+            Organisms evolve movement strategies.
+            They search for food, and the organisms
+            that collect the most food reproduce.
+        </div>
+
+
+        <div class="control">
+
+            <div class="control-header">
+                <span>Population</span>
+                <span class="value" id="populationValue">100</span>
+            </div>
+
+            <input
+                id="population"
+                type="range"
+                min="20"
+                max="300"
+                value="100"
+            />
+
+        </div>
+
+
+        <div class="control">
+
+            <div class="control-header">
+                <span>Mutation Rate</span>
+                <span class="value" id="mutationValue">3%</span>
+            </div>
+
+            <input
+                id="mutation"
+                type="range"
+                min="0"
+                max="20"
+                value="3"
+            />
+
+        </div>
+
+
+        <div class="control">
+
+            <div class="control-header">
+                <span>Crossover Rate</span>
+                <span class="value" id="crossoverValue">70%</span>
+            </div>
+
+            <input
+                id="crossover"
+                type="range"
+                min="0"
+                max="100"
+                value="70"
+            />
+
+        </div>
+
+
+        <div class="control">
+
+            <div class="control-header">
+                <span>Selection Pressure</span>
+                <span class="value" id="pressureValue">4</span>
+            </div>
+
+            <input
+                id="pressure"
+                type="range"
+                min="1"
+                max="10"
+                value="4"
+            />
+
+        </div>
+
+
+        <div class="control">
+
+            <div class="control-header">
+                <span>Simulation Speed</span>
+                <span class="value" id="speedValue">5x</span>
+            </div>
+
+            <input
+                id="speed"
+                type="range"
+                min="1"
+                max="20"
+                value="5"
+            />
+
+        </div>
+
+
+        <div class="buttons">
+
+            <button
+                id="run"
+                class="primary"
+            >
+                ▶ Run
+            </button>
+
+            <button id="step">
+                Step
+            </button>
+
+            <button id="reset">
+                Reset
+            </button>
+
+            <button id="randomize">
+                Randomize
+            </button>
+
+        </div>
+
+
+        <div class="legend">
+
+            <div>
+                <span class="dot cyan"></span>
+                Organism
+            </div>
+
+            <div>
+                <span class="dot yellow"></span>
+                Food
+            </div>
+
+            <div>
+                <span class="dot green"></span>
+                Best organism
+            </div>
+
+        </div>
+
+    </aside>
+
+</div>
+
+
+<script>
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+
+/* =========================
+   CONFIG
+========================= */
+
+const GENOME_SIZE = 16;
+
+let populationSize = 100;
+
+let mutationRate = 0.03;
+
+let crossoverRate = 0.70;
+
+let selectionPressure = 4;
+
+let speed = 5;
+
+
+/* =========================
+   WORLD
+========================= */
+
+let width;
+let height;
+
+let organisms = [];
+
+let foods = [];
+
+let generation = 0;
+
+let simulationRunning = false;
+
+let simulationFrame = 0;
+
+const GENERATION_LENGTH = 600;
+
+
+/* =========================
+   RESIZE
+========================= */
+
+function resizeCanvas() {
+
+    const rect = canvas.getBoundingClientRect();
+
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
+    ctx.setTransform(
+        dpr,
+        0,
+        0,
+        dpr,
+        0,
+        0
+    );
+
+    width = rect.width;
+    height = rect.height;
+}
+
+
+window.addEventListener(
+    "resize",
+    resizeCanvas
+);
+
+
+/* =========================
+   RANDOM
+========================= */
+
+function random(min, max) {
+
+    return Math.random() *
+        (max - min) +
+        min;
+
+}
+
+
+/* =========================
+   GENOME
+========================= */
+
+function randomGenome() {
+
+    const genome = [];
+
+    for (
+        let i = 0;
+        i < GENOME_SIZE;
+        i++
+    ) {
+
+        genome.push(
+            random(-1, 1)
+        );
+
+    }
+
+    return genome;
+}
+
+
+/* =========================
+   ORGANISM
+========================= */
+
+function createOrganism(genome = null) {
+
+    return {
+
+        x: random(20, width - 20),
+
+        y: random(20, height - 20),
+
+        angle: random(
+            0,
+            Math.PI * 2
+        ),
+
+        genome:
+            genome ||
+            randomGenome(),
+
+        fitness: 0,
+
+        energy: 0,
+
+        age: 0
+
+    };
+}
+
+
+/* =========================
+   FOOD
+========================= */
+
+function generateFood() {
+
+    foods = [];
+
+    const amount =
+        Math.max(
+            30,
+            Math.floor(
+                populationSize * 0.45
+            )
+        );
+
+    for (
+        let i = 0;
+        i < amount;
+        i++
+    ) {
+
+        foods.push({
+
+            x: random(
+                15,
+                width - 15
+            ),
+
+            y: random(
+                15,
+                height - 15
+            ),
+
+            eaten: false
+
+        });
+
+    }
+
+}
+
+
+/* =========================
+   INITIALIZE
+========================= */
+
+function initialize() {
+
+    organisms = [];
+
+    generation = 0;
+
+    simulationFrame = 0;
+
+    for (
+        let i = 0;
+        i < populationSize;
+        i++
+    ) {
+
+        organisms.push(
+            createOrganism()
+        );
+
+    }
+
+    generateFood();
+
+    updateStats();
+
+}
+
+
+/* =========================
+   MOVEMENT
+========================= */
+
+function updateOrganism(
+    organism
+) {
+
+    organism.age++;
+
+
+    /*
+       Genome controls
+       turning behaviour.
+
+       Different genes become active
+       as the organism moves through
+       its lifetime.
+    */
+
+    const geneIndex =
+        Math.floor(
+            organism.age / 35
+        ) % GENOME_SIZE;
+
+
+    const gene =
+        organism.genome[geneIndex];
+
+
+    organism.angle +=
+        gene * 0.15;
+
+
+    /*
+       Slight attraction to
+       nearby food.
+
+       Evolution can eventually
+       exploit this.
+    */
+
+    let nearestFood = null;
+
+    let nearestDistance =
+        Infinity;
+
+
+    for (
+        const food of foods
+    ) {
+
+        if (food.eaten)
+            continue;
+
+
+        const dx =
+            food.x - organism.x;
+
+        const dy =
+            food.y - organism.y;
+
+        const distance =
+            Math.sqrt(
+                dx * dx +
+                dy * dy
+            );
+
+
+        if (
+            distance <
+            nearestDistance
+        ) {
+
+            nearestDistance =
+                distance;
+
+            nearestFood =
+                food;
+
+        }
+
+    }
+
+
+    if (nearestFood) {
+
+        const dx =
+            nearestFood.x -
+            organism.x;
+
+        const dy =
+            nearestFood.y -
+            organism.y;
+
+
+        const targetAngle =
+            Math.atan2(
+                dy,
+                dx
+            );
+
+
+        /*
+           Small steering influence.
+
+           This makes evolution more
+           interesting because genomes
+           still control how strongly
+           the organism responds.
+        */
+
+        let difference =
+            targetAngle -
+            organism.angle;
+
+
+        while (
+            difference > Math.PI
+        ) {
+
+            difference -=
+                Math.PI * 2;
+
+        }
+
+
+        while (
+            difference < -Math.PI
+        ) {
+
+            difference +=
+                Math.PI * 2;
+
+        }
+
+
+        organism.angle +=
+            difference *
+            0.015 *
+            (1 + gene);
+
+    }
+
+
+    const speed = 1.7;
+
+
+    organism.x +=
+        Math.cos(
+            organism.angle
+        ) * speed;
+
+
+    organism.y +=
+        Math.sin(
+            organism.angle
+        ) * speed;
+
+
+    /*
+       World boundaries
+    */
+
+    if (
+        organism.x < 5 ||
+        organism.x > width - 5
+    ) {
+
+        organism.angle =
+            Math.PI -
+            organism.angle;
+
+    }
+
+
+    if (
+        organism.y < 5 ||
+        organism.y > height - 5
+    ) {
+
+        organism.angle =
+            -organism.angle;
+
+    }
+
+
+    organism.x =
+        Math.max(
+            5,
+            Math.min(
+                width - 5,
+                organism.x
+            )
+        );
+
+
+    organism.y =
+        Math.max(
+            5,
+            Math.min(
+                height - 5,
+                organism.y
+            )
+        );
+
+
+    /*
+       Eat food
+    */
+
+    for (
+        const food of foods
+    ) {
+
+        if (food.eaten)
+            continue;
+
+
+        const distance =
+            Math.hypot(
+                organism.x -
+                food.x,
+
+                organism.y -
+                food.y
+            );
+
+
+        if (distance < 8) {
+
+            food.eaten = true;
+
+            organism.fitness++;
+
+            organism.energy++;
+
+        }
+
+    }
+
+}
+
+
+/* =========================
+   SELECTION
+========================= */
+
+function selectParent() {
+
+    let best = null;
+
+
+    for (
+        let i = 0;
+        i < selectionPressure;
+        i++
+    ) {
+
+        const candidate =
+            organisms[
+                Math.floor(
+                    Math.random() *
+                    organisms.length
+                )
+            ];
+
+
+        if (
+            best === null ||
+            candidate.fitness >
+            best.fitness
+        ) {
+
+            best = candidate;
+
+        }
+
+    }
+
+
+    return best;
+
+}
+
+
+/* =========================
+   CROSSOVER
+========================= */
+
+function crossover(
+    parentA,
+    parentB
+) {
+
+    const genome = [];
+
+
+    for (
+        let i = 0;
+        i < GENOME_SIZE;
+        i++
+    ) {
+
+        let gene;
+
+
+        if (
+            Math.random() <
+            crossoverRate
+        ) {
+
+            gene =
+                Math.random() <
+                0.5
+
+                    ? parentA.genome[i]
+
+                    : parentB.genome[i];
+
+        }
+        else {
+
+            gene =
+                parentA.genome[i];
+
+        }
+
+
+        /*
+           Mutation
+        */
+
+        if (
+            Math.random() <
+            mutationRate
+        ) {
+
+            gene =
+                random(-1, 1);
+
+        }
+
+
+        genome.push(gene);
+
+    }
+
+
+    return genome;
+
+}
+
+
+/* =========================
+   EVOLUTION
+========================= */
+
+function evolve() {
+
+    organisms.sort(
+        (a, b) =>
+            b.fitness -
+            a.fitness
+    );
+
+
+    const nextGeneration = [];
+
+
+    /*
+       Elitism:
+       keep the best organism.
+    */
+
+    const eliteGenome =
+        [...organisms[0].genome];
+
+
+    const elite =
+        createOrganism(
+            eliteGenome
+        );
+
+
+    nextGeneration.push(
+        elite
+    );
+
+
+    /*
+       Generate children
+    */
+
+    while (
+        nextGeneration.length <
+        populationSize
+    ) {
+
+        const parentA =
+            selectParent();
+
+        const parentB =
+            selectParent();
+
+
+        const childGenome =
+            crossover(
+                parentA,
+                parentB
+            );
+
+
+        nextGeneration.push(
+            createOrganism(
+                childGenome
+            )
+        );
+
+    }
+
+
+    organisms =
+        nextGeneration;
+
+
+    generation++;
+
+    simulationFrame = 0;
+
+    generateFood();
+
+    updateStats();
+
+}
+
+
+/* =========================
+   DRAW
+========================= */
+
+function drawBackground() {
+
+    ctx.fillStyle =
+        "#0d1428";
+
+    ctx.fillRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+    /*
+       Grid
+    */
+
+    ctx.strokeStyle =
+        "rgba(100,130,180,0.08)";
+
+    ctx.lineWidth = 1;
+
+
+    const gridSize = 30;
+
+
+    for (
+        let x = 0;
+        x < width;
+        x += gridSize
+    ) {
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            x,
+            0
+        );
+
+        ctx.lineTo(
+            x,
+            height
+        );
+
+        ctx.stroke();
+
+    }
+
+
+    for (
+        let y = 0;
+        y < height;
+        y += gridSize
+    ) {
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            0,
+            y
+        );
+
+        ctx.lineTo(
+            width,
+            y
+        );
+
+        ctx.stroke();
+
+    }
+
+}
+
+
+function drawFood() {
+
+    for (
+        const food of foods
+    ) {
+
+        if (food.eaten)
+            continue;
+
+
+        ctx.fillStyle =
+            "#ffd166";
+
+
+        ctx.shadowColor =
+            "#ffd166";
+
+        ctx.shadowBlur = 10;
+
+
+        ctx.beginPath();
+
+        ctx.arc(
+            food.x,
+            food.y,
+            4,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+
+        ctx.shadowBlur = 0;
+
+    }
+
+}
+
+
+function drawOrganism(
+    organism,
+    isBest
+) {
+
+    ctx.save();
+
+
+    ctx.translate(
+        organism.x,
+        organism.y
+    );
+
+
+    ctx.rotate(
+        organism.angle
+    );
+
+
+    const color =
+        isBest
+            ? "#55efc4"
+            : "#65d9ff";
+
+
+    ctx.fillStyle =
+        color;
+
+
+    ctx.shadowColor =
+        color;
+
+    ctx.shadowBlur =
+        isBest ? 18 : 8;
+
+
+    /*
+       Triangle / arrow
+    */
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        9,
+        0
+    );
+
+    ctx.lineTo(
+        -6,
+        -5
+    );
+
+    ctx.lineTo(
+        -4,
+        0
+    );
+
+    ctx.lineTo(
+        -6,
+        5
+    );
+
+    ctx.closePath();
+
+    ctx.fill();
+
+
+    ctx.restore();
+
+}
+
+
+function draw() {
+
+    drawBackground();
+
+    drawFood();
+
+
+    let best =
+        organisms[0];
+
+
+    for (
+        const organism
+        of organisms
+    ) {
+
+        if (
+            organism.fitness >
+            best.fitness
+        ) {
+
+            best = organism;
+
+        }
+
+    }
+
+
+    for (
+        const organism
+        of organisms
+    ) {
+
+        drawOrganism(
+            organism,
+            organism === best
+        );
+
+    }
+
+}
+
+
+/* =========================
+   STATS
+========================= */
+
+function updateStats() {
+
+    if (
+        organisms.length === 0
+    )
+        return;
+
+
+    let best = 0;
+
+    let total = 0;
+
+
+    for (
+        const organism
+        of organisms
+    ) {
+
+        best =
+            Math.max(
+                best,
+                organism.fitness
+            );
+
+        total +=
+            organism.fitness;
+
+    }
+
+
+    const average =
+        total /
+        organisms.length;
+
+
+    document
+        .getElementById(
+            "generation"
+        )
+        .textContent =
+        generation;
+
+
+    document
+        .getElementById(
+            "bestFitness"
+        )
+        .textContent =
+        best;
+
+
+    document
+        .getElementById(
+            "averageFitness"
+        )
+        .textContent =
+        average.toFixed(1);
+
+}
+
+
+/* =========================
+   SIMULATION
+========================= */
+
+function simulationStep() {
+
+    for (
+        let i = 0;
+        i < speed;
+        i++
+    ) {
+
+        for (
+            const organism
+            of organisms
+        ) {
+
+            updateOrganism(
+                organism
+            );
+
+        }
+
+
+        simulationFrame++;
+
+
+        if (
+            simulationFrame >=
+            GENERATION_LENGTH
+        ) {
+
+            evolve();
+
+        }
+
+    }
+
+
+    draw();
+
+}
+
+
+function loop() {
+
+    if (
+        simulationRunning
+    ) {
+
+        simulationStep();
+
+    }
+
+
+    requestAnimationFrame(
+        loop
+    );
+
+}
+
+
+/* =========================
+   CONTROLS
+========================= */
+
+const populationSlider =
+    document.getElementById(
+        "population"
+    );
+
+const mutationSlider =
+    document.getElementById(
+        "mutation"
+    );
+
+const crossoverSlider =
+    document.getElementById(
+        "crossover"
+    );
+
+const pressureSlider =
+    document.getElementById(
+        "pressure"
+    );
+
+const speedSlider =
+    document.getElementById(
+        "speed"
+    );
+
+
+populationSlider
+    .addEventListener(
+        "input",
+        () => {
+
+            populationSize =
+                Number(
+                    populationSlider.value
+                );
+
+
+            document
+                .getElementById(
+                    "populationValue"
+                )
+                .textContent =
+                populationSize;
+
+        }
+    );
+
+
+mutationSlider
+    .addEventListener(
+        "input",
+        () => {
+
+            mutationRate =
+                Number(
+                    mutationSlider.value
+                ) / 100;
+
+
+            document
+                .getElementById(
+                    "mutationValue"
+                )
+                .textContent =
+                mutationSlider.value +
+                "%";
+
+        }
+    );
+
+
+crossoverSlider
+    .addEventListener(
+        "input",
+        () => {
+
+            crossoverRate =
+                Number(
+                    crossoverSlider.value
+                ) / 100;
+
+
+            document
+                .getElementById(
+                    "crossoverValue"
+                )
+                .textContent =
+                crossoverSlider.value +
+                "%";
+
+        }
+    );
+
+
+pressureSlider
+    .addEventListener(
+        "input",
+        () => {
+
+            selectionPressure =
+                Number(
+                    pressureSlider.value
+                );
+
+
+            document
+                .getElementById(
+                    "pressureValue"
+                )
+                .textContent =
+                selectionPressure;
+
+        }
+    );
+
+
+speedSlider
+    .addEventListener(
+        "input",
+        () => {
+
+            speed =
+                Number(
+                    speedSlider.value
+                );
+
+
+            document
+                .getElementById(
+                    "speedValue"
+                )
+                .textContent =
+                speed +
+                "x";
+
+        }
+    );
+
+
+/* =========================
+   BUTTONS
+========================= */
+
+document
+    .getElementById("run")
+    .addEventListener(
+        "click",
+        () => {
+
+            simulationRunning =
+                !simulationRunning;
+
+
+            document
+                .getElementById(
+                    "run"
+                )
+                .textContent =
+                simulationRunning
+                    ? "⏸ Pause"
+                    : "▶ Run";
+
+        }
+    );
+
+
+document
+    .getElementById("step")
+    .addEventListener(
+        "click",
+        () => {
+
+            simulationStep();
+
+        }
+    );
+
+
+document
+    .getElementById("reset")
+    .addEventListener(
+        "click",
+        () => {
+
+            simulationRunning =
+                false;
+
+            document
+                .getElementById(
+                    "run"
+                )
+                .textContent =
+                "▶ Run";
+
+            initialize();
+
+            draw();
+
+        }
+    );
+
+
+document
+    .getElementById("randomize")
+    .addEventListener(
+        "click",
+        () => {
+
+            initialize();
+
+            draw();
+
+        }
+    );
+
+
+/* =========================
+   START
+========================= */
+
+resizeCanvas();
+
+initialize();
+
+draw();
+
+loop();
+
+</script>
+
+</body>
+</html>

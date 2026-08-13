@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  background-color: #0b1020;
+  color: #e8eefc;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+@layer components {
+    .btn-secondary {
+        @apply py-2 px-4 rounded-lg bg-[#18223b] text-[#e8eefc] border border-[#334366] transition-colors duration-200 hover:bg-[#22304e] text-sm font-medium;
+    }
+}
