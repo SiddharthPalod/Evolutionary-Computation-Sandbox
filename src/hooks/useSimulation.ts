@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Engine } from '../domain/Engine';
-import type { EngineConfig } from '../domain/Engine';
+import type { EngineConfig, AlgorithmMode } from '../domain/Engine';
 import { CanvasRenderer } from '../infrastructure/CanvasRenderer';
 
 export function useSimulation() {
@@ -9,27 +9,61 @@ export function useSimulation() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const requestRef = useRef<number>(0);
 
-    const [isRunning, setIsRunning] = useState(false);
-    const [stats, setStats] = useState({ generation: 0, bestFitness: 0, averageFitness: 0 });
+    const [isRunning, setIsRunning] = useState(true);
+    const [algorithmMode, setAlgorithmMode] = useState<AlgorithmMode>('GENETIC');
+    const [stats, setStats] = useState({
+        algorithmMode: 'GENETIC' as AlgorithmMode,
+        aliveCount: 0,
+        oldestAge: 0,
+        highestGeneration: 1,
+        totalBirths: 0,
+        totalDeaths: 0,
+        averageEnergy: 100,
+        averageHydration: 100,
+        fruitCount: 0,
+        totalFruitsEaten: 0
+    });
+
     const [config, setConfig] = useState<EngineConfig>({
-        populationSize: 100,
-        mutationRate: 0.03,
-        crossoverRate: 0.70,
-        selectionPressure: 4,
-        speed: 5,
-        width: 0,
-        height: 0
+        algorithmMode: 'GENETIC',
+        initialPopulation: 25,
+        maxFood: 80,
+        foodSpawnRate: 0.08,
+        foodNutrition: 45,
+        hungerDrain: 0.12,
+        thirstDrain: 0.14,
+        mutationRate: 0.08,
+        speed: 2,
+        width: 800,
+        height: 600,
+        pheromoneEvaporation: 0.010,
+        pheromoneDepositRate: 0.95,
+        sensorDistance: 42,
+        sensorAngle: 0.50
     });
 
     useEffect(() => {
         engineRef.current = new Engine();
         setConfig(engineRef.current.config);
+        setAlgorithmMode(engineRef.current.config.algorithmMode);
     }, []);
 
     const updateConfig = (newConfig: Partial<EngineConfig>) => {
         if (!engineRef.current) return;
         engineRef.current.updateConfig(newConfig);
         setConfig(engineRef.current.config);
+        if (newConfig.algorithmMode) {
+            setAlgorithmMode(newConfig.algorithmMode);
+        }
+    };
+
+    const switchAlgorithmMode = (mode: AlgorithmMode) => {
+        if (!engineRef.current) return;
+        engineRef.current.setAlgorithmMode(mode);
+        setAlgorithmMode(mode);
+        setConfig(engineRef.current.config);
+        syncStats();
+        draw();
     };
 
     const draw = useCallback(() => {
@@ -38,26 +72,37 @@ export function useSimulation() {
         rendererRef.current.draw(state, canvasRef.current.width, canvasRef.current.height);
     }, []);
 
+    const syncStats = useCallback(() => {
+        if (!engineRef.current) return;
+        const s = engineRef.current.state;
+        setStats({
+            algorithmMode: s.algorithmMode,
+            aliveCount: s.aliveCount,
+            oldestAge: s.oldestAge,
+            highestGeneration: s.highestGeneration,
+            totalBirths: s.totalBirths,
+            totalDeaths: s.totalDeaths,
+            averageEnergy: s.averageEnergy,
+            averageHydration: s.averageHydration,
+            fruitCount: s.foods.length,
+            totalFruitsEaten: s.totalFruitsEaten
+        });
+    }, []);
+
     const loop = useCallback(() => {
         if (!engineRef.current) return;
 
         if (isRunning) {
             engineRef.current.step();
-            
-            // Sync stats for React UI (throttle a bit if needed, but for now every frame is okay, or we could just sync generation and fitness)
-            setStats({
-                generation: engineRef.current.state.generation,
-                bestFitness: engineRef.current.state.bestFitness,
-                averageFitness: engineRef.current.state.averageFitness
-            });
+            syncStats();
         }
-        
+
         draw();
         requestRef.current = requestAnimationFrame(loop);
-    }, [isRunning, draw]);
+    }, [isRunning, draw, syncStats]);
 
     useEffect(() => {
-        if (engineRef.current && canvasRef.current) {
+        if (canvasRef.current) {
             rendererRef.current = new CanvasRenderer(canvasRef.current.getContext('2d')!);
         }
     }, [canvasRef]);
@@ -68,40 +113,49 @@ export function useSimulation() {
     }, [loop]);
 
     const toggleRun = () => setIsRunning(!isRunning);
-    
+
     const step = () => {
         engineRef.current?.step();
+        syncStats();
         draw();
-        if (engineRef.current) {
-            setStats({
-                generation: engineRef.current.state.generation,
-                bestFitness: engineRef.current.state.bestFitness,
-                averageFitness: engineRef.current.state.averageFitness
-            });
-        }
     };
 
     const reset = () => {
-        setIsRunning(false);
         engineRef.current?.initialize();
+        syncStats();
         draw();
-        if (engineRef.current) {
-            setStats({
-                generation: engineRef.current.state.generation,
-                bestFitness: engineRef.current.state.bestFitness,
-                averageFitness: engineRef.current.state.averageFitness
-            });
-        }
+    };
+
+    const clearPheromones = () => {
+        engineRef.current?.clearPheromones();
+        draw();
+    };
+
+    const spawnFoodCluster = (count: number = 18) => {
+        engineRef.current?.spawnFoodCluster(count);
+        syncStats();
+        draw();
+    };
+
+    const seedOrganisms = (count: number = 15) => {
+        engineRef.current?.seedOrganisms(count);
+        syncStats();
+        draw();
     };
 
     return {
         canvasRef,
         stats,
         config,
+        algorithmMode,
         isRunning,
         updateConfig,
+        switchAlgorithmMode,
         toggleRun,
         step,
-        reset
+        reset,
+        clearPheromones,
+        spawnFoodCluster,
+        seedOrganisms
     };
 }

@@ -4,41 +4,54 @@ import { StatPanel } from './components/StatPanel';
 import { Sidebar } from './components/Sidebar';
 
 function App() {
-    const { 
-        canvasRef, 
-        stats, 
-        config, 
-        isRunning, 
-        updateConfig, 
-        toggleRun, 
-        step, 
-        reset 
+    const {
+        canvasRef,
+        stats,
+        config,
+        algorithmMode,
+        isRunning,
+        updateConfig,
+        switchAlgorithmMode,
+        toggleRun,
+        step,
+        reset,
+        clearPheromones,
+        spawnFoodCluster,
+        seedOrganisms
     } = useSimulation();
 
     return (
-        <div className="flex h-screen w-full bg-[#0b1020] overflow-hidden font-sans">
+        <div className="flex h-screen w-full bg-[#090d1a] overflow-hidden font-sans">
             <main className="flex-1 relative">
-                <SimulationCanvas 
-                    canvasRef={canvasRef} 
+                <SimulationCanvas
+                    canvasRef={canvasRef}
                     onResize={(width, height) => updateConfig({ width, height })}
                 />
-                <StatPanel 
-                    generation={stats.generation}
-                    bestFitness={stats.bestFitness}
-                    averageFitness={stats.averageFitness}
+                <StatPanel
+                    algorithmMode={algorithmMode}
+                    aliveCount={stats.aliveCount}
+                    averageEnergy={stats.averageEnergy}
+                    averageHydration={stats.averageHydration}
+                    oldestAge={stats.oldestAge}
+                    highestGeneration={stats.highestGeneration}
+                    totalBirths={stats.totalBirths}
+                    totalDeaths={stats.totalDeaths}
+                    totalFruitsEaten={stats.totalFruitsEaten}
                 />
             </main>
-            
-            <Sidebar 
+
+            <Sidebar
                 config={config}
+                algorithmMode={algorithmMode}
                 isRunning={isRunning}
+                onSwitchAlgorithmMode={switchAlgorithmMode}
                 onUpdateConfig={updateConfig}
                 onToggleRun={toggleRun}
                 onStep={step}
                 onReset={reset}
-                onRandomize={() => {
-                    reset();
-                }}
+                onClearPheromones={clearPheromones}
+                onSpawnFood={() => spawnFoodCluster(18)}
+                onSeedOrganisms={() => seedOrganisms(15)}
             />
         </div>
     );

@@ -11,12 +11,14 @@ function createWindow() {
         }
     });
 
-    // In development, load the Vite dev server
-    // In production, load the built index.html
-    if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
-        win.loadURL("http://localhost:5173");
+    const fs = require('fs');
+    const distIndex = path.join(__dirname, "../dist/index.html");
+
+    // If built, load local index.html directly; otherwise connect to dev server
+    if (fs.existsSync(distIndex)) {
+        win.loadFile(distIndex);
     } else {
-        win.loadFile(path.join(__dirname, "../dist/index.html"));
+        win.loadURL("http://localhost:5173");
     }
 }
 

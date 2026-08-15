@@ -9,6 +9,20 @@ export class GenomeMutator {
         return genome;
     }
 
+    public static mutateGenome(parentGenome: number[], mutationRate: number): number[] {
+        const genome: number[] = [];
+        for (let i = 0; i < GENOME_SIZE; i++) {
+            let gene = parentGenome[i];
+            if (Math.random() < mutationRate) {
+                // Mutate slightly or randomize
+                gene += this.random(-0.4, 0.4);
+                gene = Math.max(-1, Math.min(1, gene));
+            }
+            genome.push(gene);
+        }
+        return genome;
+    }
+
     public static crossover(parentA: number[], parentB: number[], crossoverRate: number, mutationRate: number): number[] {
         const genome: number[] = [];
 

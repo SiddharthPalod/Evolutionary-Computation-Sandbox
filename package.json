@@ -6,6 +6,7 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "start": "tsc -b && vite build && electron .",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview"
